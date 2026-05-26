@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Gestão Estratégica — Ementor Learning</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #1e2535;
+  }
+  .header-left h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #f1f5f9;
+    letter-spacing: -0.3px;
+  }
+  .header-left p {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 4px;
+  }
+  .header-right {
+    display: flex;
+    gap: 8px;
+  }
+  .month-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid #2d3748;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .month-btn:hover { border-color: #4f6ef7; color: #4f6ef7; }
+  .month-btn.active { background: #4f6ef7; border-color: #4f6ef7; color: #fff; }
+  .month-btn.all { border-color: #334155; }
+  .month-btn.all.active { background: #334155; border-color: #475569; color: #f1f5f9; }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #475569;
+    margin: 24px 0 12px;
+  }
+
+  /* KPI CARDS TOP */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .kpi-card {
+    background: #161b27;
+    border: 1px solid #1e2535;
+    border-radius: 12px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+  }
+  .kpi-card.blue::before { background: #4f6ef7; }
+  .kpi-card.green::before { background: #10b981; }
+  .kpi-card.red::before { background: #ef4444; }
+  .kpi-card.orange::before { background: #f59e0b; }
+  .kpi-card.purple::before { background: #8b5cf6; }
+  .kpi-card.teal::before { background: #06b6d4; }
+
+  .kpi-label {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+  .kpi-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #f1f5f9;
+    line-height: 1;
+    letter-spacing: -0.5px;
+  }
+  .kpi-value.negative { color: #ef4444; }
+  .kpi-value.positive { color: #10b981; }
+  .kpi-sub {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 6px;
+  }
+  .kpi-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 6px;
+  }
+  .badge-up { background: #064e3b; color: #34d399; }
+  .badge-down { background: #450a0a; color: #f87171; }
+  .badge-neutral { background: #1e2535; color: #94a3b8; }
+
+  /* CHARTS GRID */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .charts-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .chart-card {
+    background: #161b27;
+    border: 1px solid #1e2535;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .chart-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+  .chart-subtitle {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 2px;
+  }
+  .chart-container {
+    position: relative;
+    height: 220px;
+  }
+  .chart-container.tall {
+    height: 260px;
+  }
+
+  /* DRE TABLE */
+  .dre-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  .dre-table th {
+    text-align: right;
+    padding: 8px 12px;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #1e2535;
+  }
+  .dre-table th:first-child { text-align: left; }
+  .dre-table td {
+    padding: 8px 12px;
+    text-align: right;
+    color: #cbd5e1;
+    border-bottom: 1px solid #0f1117;
+  }
+  .dre-table td:first-child { text-align: left; color: #e2e8f0; }
+  .dre-table tr:hover td { background: #1a2035; }
+  .dre-table .total-row td {
+    font-weight: 700;
+    border-top: 1px solid #2d3748;
+    color: #f1f5f9;
+    font-size: 13px;
+  }
+  .dre-table .positive-val { color: #10b981 !important; font-weight: 600; }
+  .dre-table .negative-val { color: #ef4444 !important; font-weight: 600; }
+  .dre-table .section-header td {
+    font-weight: 700;
+    color: #94a3b8;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-top: 14px;
+    background: #0f1117;
+  }
+  .dre-table .indent td:first-child { padding-left: 28px; color: #94a3b8; font-size: 12px; }
+
+  /* CLIENT TABLE */
+  .client-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  .client-table th {
+    text-align: left;
+    padding: 8px 12px;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #1e2535;
+  }
+  .client-table th:last-child { text-align: right; }
+  .client-table td {
+    padding: 8px 12px;
+    color: #cbd5e1;
+    border-bottom: 1px solid #0f1117;
+    vertical-align: middle;
+  }
+  .client-table td:last-child { text-align: right; }
+  .client-table tr:hover td { background: #1a2035; }
+  .bar-bg {
+    background: #1e2535;
+    border-radius: 4px;
+    height: 6px;
+    width: 100%;
+    margin-top: 4px;
+  }
+  .bar-fill {
+    background: #4f6ef7;
+    border-radius: 4px;
+    height: 6px;
+    transition: width 0.8s ease;
+  }
+
+  /* ALERT CARDS */
+  .alert-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .alert-card {
+    background: #161b27;
+    border: 1px solid #1e2535;
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .alert-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .alert-title { font-size: 13px; font-weight: 600; color: #e2e8f0; }
+  .alert-text { font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.5; }
+  .alert-card.warn { border-color: #78350f; }
+  .alert-card.good { border-color: #064e3b; }
+  .alert-card.info { border-color: #1e3a5f; }
+
+  /* Legend */
+  .legend { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .legend-item { display: flex; gap: 6px; align-items: center; font-size: 11px; color: #64748b; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Scrollable table container */
+  .table-scroll { overflow-x: auto; }
+
+  /* Info tooltip */
+  .info-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: #1e2535;
+    color: #94a3b8;
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .divider { height: 1px; background: #1e2535; margin: 20px 0; }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-row { grid-template-columns: 1fr; }
+    .charts-row-3 { grid-template-columns: 1fr 1fr; }
+    .alert-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 700px) {
+    body { padding: 12px; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .charts-row-3 { grid-template-columns: 1fr; }
+    .alert-grid { grid-template-columns: 1fr; }
+    .header { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>📊 Painel de Gestão Estratégica</h1>
+    <p>Ementor Learning · Jan–Mai 2026 · Conta Azul</p>
+  </div>
+  <div class="header-right">
+    <button class="month-btn" onclick="setMonth('Jan/26')">Jan</button>
+    <button class="month-btn" onclick="setMonth('Fev/26')">Fev</button>
+    <button class="month-btn" onclick="setMonth('Mar/26')">Mar</button>
+    <button class="month-btn" onclick="setMonth('Abr/26')">Abr</button>
+    <button class="month-btn" onclick="setMonth('Mai/26')">Mai</button>
+    <button class="month-btn all active" onclick="setMonth('all')">Visão Geral</button>
+  </div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="section-title">Indicadores do Período</div>
+<div class="kpi-grid" id="kpiGrid">
+  <!-- dynamically rendered -->
+</div>
+
+<!-- CHARTS ROW 1: Receita + Fluxo de Caixa -->
+<div class="section-title">Faturamento · Fluxo de Caixa · DRE</div>
+<div class="charts-row">
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Receita vs Despesas vs Resultado</div>
+        <div class="chart-subtitle">Regime de competência — visão mensal</div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#4f6ef7"></div>Receita</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Despesas</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>Resultado</div>
+      </div>
+    </div>
+    <div class="chart-container tall">
+      <canvas id="chartReceita"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Saldo de Caixa</div>
+        <div class="chart-subtitle">Saúde financeira real</div>
+      </div>
+    </div>
+    <div class="chart-container tall">
+      <canvas id="chartCaixa"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- CHARTS ROW 2: Custos + Margens + PE -->
+<div class="charts-row-3">
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Custos Fixos vs Variáveis</div>
+        <div class="chart-subtitle">Estrutura de despesas</div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="chartCustos"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Margem Líquida %</div>
+        <div class="chart-subtitle">Rentabilidade real por mês</div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="chartMargem"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Ponto de Equilíbrio vs Receita</div>
+        <div class="chart-subtitle">Quanto precisava faturar</div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="chartPE"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- DRE SECTION -->
+<div class="section-title">DRE — Demonstrativo de Resultado</div>
+<div class="chart-card" style="margin-bottom:12px">
+  <div class="table-scroll">
+    <table class="dre-table" id="dreTable">
+      <!-- rendered by JS -->
+    </table>
+  </div>
+</div>
+
+<!-- CLIENTS + CUSTOS DETAIL -->
+<div class="charts-row">
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Clientes — Receita Total Acumulada</div>
+        <div class="chart-subtitle">Jan–Mai 2026 · Cruzamento financeiro x operação</div>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="client-table" id="clientTable"><!-- rendered --></table>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Ticket Médio por Mês</div>
+        <div class="chart-subtitle">Receita ÷ Nº de Clientes Ativos</div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="chartTicket"></canvas>
+    </div>
+    <div style="margin-top:16px">
+      <div class="chart-title" style="font-size:12px;margin-bottom:8px">Clientes Ativos por Mês</div>
+      <div class="chart-container" style="height:80px">
+        <canvas id="chartClientes"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ALERTS / INSIGHTS -->
+<div class="section-title">Insights Estratégicos</div>
+<div class="alert-grid">
+  <div class="alert-card warn">
+    <div class="alert-icon">⚠️</div>
+    <div>
+      <div class="alert-title">Fev/26: Mês Crítico</div>
+      <div class="alert-text">Receita de R$31k com despesas de R$117k. Margem de -274%. Atenção ao custo com Mentores (R$43k) e Bônus (R$14k) descolados da receita.</div>
+    </div>
+  </div>
+  <div class="alert-card warn">
+    <div class="alert-icon">⚠️</div>
+    <div>
+      <div class="alert-title">Abr/26: Queda no Resultado</div>
+      <div class="alert-text">Feiras e Eventos consumiram R$19k. Custos fixos (mentores) chegaram a R$83k. Receita estável não cobriu a expansão de despesas.</div>
+    </div>
+  </div>
+  <div class="alert-card good">
+    <div class="alert-icon">✅</div>
+    <div>
+      <div class="alert-title">Mai/26: Melhor Mês do Período</div>
+      <div class="alert-text">Receita de R$263k com 11 clientes ativos. Lucro líquido de R$117k (44.5% de margem). SKILLHUB sozinha trouxe R$179k — concentração de risco.</div>
+    </div>
+  </div>
+  <div class="alert-card info">
+    <div class="alert-icon">💡</div>
+    <div>
+      <div class="alert-title">Concentração em SKILLHUB</div>
+      <div class="alert-text">R$308k de R$633k total (49% da receita acumulada). Alta dependência de 1 cliente. Diversificar carteira é prioridade estratégica.</div>
+    </div>
+  </div>
+  <div class="alert-card info">
+    <div class="alert-icon">📈</div>
+    <div>
+      <div class="alert-title">Crescimento de Clientes</div>
+      <div class="alert-text">De 2 clientes em Jan para 11 em Mai — crescimento de 450%. Ticket médio caindo (R$45k → R$24k) indica expansão de base, não perda de valor.</div>
+    </div>
+  </div>
+  <div class="alert-card warn">
+    <div class="alert-icon">🔴</div>
+    <div>
+      <div class="alert-title">Mentores: Maior Custo Fixo</div>
+      <div class="alert-text">Representa 50-80% dos custos fixos mensais (R$26k a R$83k). Precisa estar atrelado diretamente à receita para não comprometer a margem.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== DATA ====================
+const DATA = {
+  "Jan/26": {
+    receita: 91131.69, custos_fixos: 72600.18, custos_variaveis: 4327.98,
+    total_despesas: 76928.16, lucro_liquido: 14203.53, margem_liquida_pct: 15.6,
+    clientes: 2, ticket_medio: 45565.84, mc_pct: 95.3, ponto_equilibrio: 76219.98,
+    saldo_caixa: 653.65,
+    desp_detail: { "Mentores": 26573.64, "Serviços PJ": 11500, "Simples Nacional": 9807.27, "Sócio PJ": 9500, "Pró-labore": 8870.52, "Estagiários": 5500, "Bônus": 3628.98, "Honorários": 497, "Uniformes": 699, "IRRF": 166.98, "Telefonia": 184.77 }
+  },
+  "Fev/26": {
+    receita: 31382.49, custos_fixos: 89012.51, custos_variaveis: 28225.17,
+    total_despesas: 117237.68, lucro_liquido: -85855.19, margem_liquida_pct: -273.6,
+    clientes: 1, ticket_medio: 31382.49, mc_pct: 10.1, ponto_equilibrio: 884748.52,
+    saldo_caixa: 1098.46,
+    desp_detail: { "Mentores": 43470.47, "Bônus": 14648.98, "Cartões": 12964.94, "Serviços PJ": 12500, "Estagiários": 6000, "Sócio PJ": 9500, "Pró-labore": 8351.02, "Simples Nacional": 7547.81, "Honorários": 1279.49, "IRRF": 178.31, "Telefonia": 185.41 }
+  },
+  "Mar/26": {
+    receita: 128956.28, custos_fixos: 106847.30, custos_variaveis: 12524.61,
+    total_despesas: 119371.91, lucro_liquido: 9584.37, margem_liquida_pct: 7.4,
+    clientes: 6, ticket_medio: 21492.71, mc_pct: 90.3, ponto_equilibrio: 118340.91,
+    saldo_caixa: 13832.54,
+    desp_detail: { "Mentores": 56500.67, "Simples Nacional": 15569.88, "Serviços PJ": 10750, "Antecipação": 8257.31, "Pró-labore": 13431.88, "Estagiários": 6000, "Sócio PJ": 3500, "Bônus": 2450, "Honorários": 497, "IRRF": 358.84, "Uniformes": 699, "Materiais": 648, "Telefonia": 239.03 }
+  },
+  "Abr/26": {
+    receita: 118238.87, custos_fixos: 119843.78, custos_variaveis: 33907.49,
+    total_despesas: 153751.27, lucro_liquido: -35512.40, margem_liquida_pct: -30.0,
+    clientes: 7, ticket_medio: 16891.27, mc_pct: 71.3, ponto_equilibrio: 168029.90,
+    saldo_caixa: 11493.38,
+    desp_detail: { "Mentores": 83511.54, "Feiras e Eventos": 19004.62, "Bônus": 10848.98, "Serviços PJ": 10500, "Sócio PJ": 9500, "Pró-labore": 8621, "Estagiários": 4500, "Brindes": 2904.45, "Simples Nacional": 2216.48, "Honorários": 507.42, "IRRF": 298.31, "Telefonia": 189.03, "Taxas": 437.43 }
+  },
+  "Mai/26": {
+    receita: 263863.90, custos_fixos: 111306.86, custos_variaveis: 35106.18,
+    total_despesas: 146413.04, lucro_liquido: 117450.86, margem_liquida_pct: 44.5,
+    clientes: 11, ticket_medio: 23987.63, mc_pct: 86.7, ponto_equilibrio: 128388.51,
+    saldo_caixa: 127030.58,
+    desp_detail: { "Mentores": 51152.56, "Cartões": 21488.80, "Serviços PJ": 20078.66, "Simples Nacional": 16828.61, "Bônus": 13348.98, "Sócio PJ": 9500, "Pró-labore": 8442.69, "Estagiários": 4500, "Honorários": 497, "IRRF": 178.31, "Telefonia": 129.03, "Alimentação": 203.40 }
+  }
+};
+
+const CLIENTS = [
+  { name: "SKILLHUB", total: 308512.55, n: 6 },
+  { name: "MAGAZINE LUIZA", total: 29964.00, n: 1 },
+  { name: "BBUTTON VENTURES", total: 28123.98, n: 6 },
+  { name: "POSITIVO EDUCACIONAL", total: 14600.00, n: 1 },
+  { name: "ASSOC. LOJISTAS MUELLER", total: 7990.00, n: 1 },
+  { name: "PREMIUM SOLUÇÕES FINANCEIRAS", total: 7764.00, n: 3 },
+  { name: "AUTOGLASS", total: 7450.00, n: 1 },
+  { name: "GUPY TECNOLOGIA", total: 5000.00, n: 1 },
+  { name: "FAC. SÃO LEOPOLDO MANDIC", total: 4491.00, n: 3 },
+  { name: "FLYTOUR GLOBAL BUSINESS", total: 4000.00, n: 1 },
+  { name: "PUC PR", total: 2400.00, n: 2 },
+  { name: "SENAI PARANÁ", total: 2913.66, n: 1 },
+  { name: "MENTORIA GAMES BRASIL", total: 1994.00, n: 2 },
+  { name: "KARTADO TECNOLOGIA", total: 1491.00, n: 3 },
+];
+
+const MESES = ["Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26"];
+const COLORS = {
+  blue: "#4f6ef7",
+  green: "#10b981",
+  red: "#ef4444",
+  orange: "#f59e0b",
+  purple: "#8b5cf6",
+  teal: "#06b6d4",
+  grid: "#1e2535",
+  text: "#94a3b8",
+};
+
+let currentMonth = "all";
+
+// ==================== UTILS ====================
+function fmt(v, decimals=0) {
+  if (Math.abs(v) >= 1000) {
+    const s = v < 0 ? "-" : "";
+    const n = Math.abs(v);
+    if (n >= 1000000) return s + "R$ " + (n/1000000).toFixed(1) + "M";
+    if (n >= 1000) return s + "R$ " + (n/1000).toFixed(1) + "k";
+  }
+  return (v < 0 ? "-" : "") + "R$ " + Math.abs(v).toLocaleString('pt-BR', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+}
+function fmtFull(v) {
+  const s = v < 0 ? "-" : "";
+  return s + "R$ " + Math.abs(v).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+function pct(v) { return v.toFixed(1) + "%"; }
+
+// ==================== CHARTS ====================
+const chartDefaults = {
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: "#1a2035",
+      borderColor: "#2d3748",
+      borderWidth: 1,
+      titleColor: "#94a3b8",
+      bodyColor: "#e2e8f0",
+      padding: 10,
+    }
+  },
+  scales: {
+    x: { grid: { color: COLORS.grid }, ticks: { color: COLORS.text, font: { size: 11 } } },
+    y: { grid: { color: COLORS.grid }, ticks: { color: COLORS.text, font: { size: 11 } } }
+  }
+};
+
+function makeChart(id, config) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return null;
+  if (ctx._chart) ctx._chart.destroy();
+  const c = new Chart(ctx, config);
+  ctx._chart = c;
+  return c;
+}
+
+function buildCharts(month) {
+  const isAll = month === "all";
+  const labels = isAll ? MESES : [month];
+  const rows = isAll ? MESES.map(m => DATA[m]) : [DATA[month]];
+
+  // Chart 1: Receita / Despesas / Resultado
+  makeChart("chartReceita", {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        { label: "Receita", data: rows.map(r => r.receita), backgroundColor: COLORS.blue + "cc", borderRadius: 4 },
+        { label: "Despesas", data: rows.map(r => -r.total_despesas), backgroundColor: COLORS.red + "cc", borderRadius: 4 },
+        {
+          label: "Resultado", type: "line",
+          data: rows.map(r => r.lucro_liquido),
+          borderColor: COLORS.green, backgroundColor: COLORS.green + "22",
+          borderWidth: 2, pointRadius: 5, pointBackgroundColor: COLORS.green,
+          fill: false, tension: 0.3, yAxisID: "y"
+        }
+      ]
+    },
+    options: {
+      ...chartDefaults,
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        ...chartDefaults.plugins,
+        legend: { display: true, labels: { color: "#94a3b8", font: { size: 11 }, boxWidth: 12, padding: 12 } },
+        tooltip: {
+          ...chartDefaults.plugins.tooltip,
+          callbacks: {
+            label: function(ctx) {
+              return ctx.dataset.label + ": " + fmtFull(ctx.raw);
+            }
+          }
+        }
+      },
+      scales: {
+        ...chartDefaults.scales,
+        y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks, callback: v => fmt(v) } }
+      }
+    }
+  });
+
+  // Chart 2: Saldo Caixa
+  makeChart("chartCaixa", {
+    type: "line",
+    data: {
+      labels: MESES,
+      datasets: [{
+        label: "Saldo Caixa", data: MESES.map(m => DATA[m].saldo_caixa),
+        borderColor: COLORS.teal, backgroundColor: COLORS.teal + "22",
+        borderWidth: 2.5, fill: true, tension: 0.4,
+        pointRadius: 5, pointBackgroundColor: COLORS.teal,
+      }]
+    },
+    options: {
+      ...chartDefaults, responsive: true, maintainAspectRatio: false,
+      plugins: { ...chartDefaults.plugins, tooltip: { ...chartDefaults.plugins.tooltip, callbacks: { label: ctx => "Saldo: " + fmtFull(ctx.raw) } } },
+      scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks, callback: v => fmt(v) } } }
+    }
+  });
+
+  // Chart 3: Custos Fixos vs Variáveis
+  makeChart("chartCustos", {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        { label: "Custos Fixos", data: rows.map(r => r.custos_fixos), backgroundColor: COLORS.orange + "cc", borderRadius: 4 },
+        { label: "Custos Variáveis", data: rows.map(r => r.custos_variaveis), backgroundColor: COLORS.purple + "cc", borderRadius: 4 },
+      ]
+    },
+    options: {
+      ...chartDefaults, responsive: true, maintainAspectRatio: false,
+      plugins: {
+        ...chartDefaults.plugins,
+        legend: { display: true, labels: { color: "#94a3b8", font: { size: 10 }, boxWidth: 10, padding: 8 } },
+        tooltip: { ...chartDefaults.plugins.tooltip, callbacks: { label: ctx => ctx.dataset.label + ": " + fmtFull(ctx.raw) } }
+      },
+      scales: { ...chartDefaults.scales, x: { ...chartDefaults.scales.x, stacked: true }, y: { ...chartDefaults.scales.y, stacked: true, ticks: { ...chartDefaults.scales.y.ticks, callback: v => fmt(v) } } }
+    }
+  });
+
+  // Chart 4: Margem Líquida
+  const margemData = rows.map(r => r.margem_liquida_pct);
+  const margemColors = margemData.map(v => v >= 0 ? COLORS.green + "cc" : COLORS.red + "cc");
+  makeChart("chartMargem", {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Margem Líquida %", data: margemData,
+        backgroundColor: margemColors, borderRadius: 4,
+      }]
+    },
+    options: {
+      ...chartDefaults, responsive: true, maintainAspectRatio: false,
+      plugins: { ...chartDefaults.plugins, tooltip: { ...chartDefaults.plugins.tooltip, callbacks: { label: ctx => "Margem: " + pct(ctx.raw) } } },
+      scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks, callback: v => v + "%" } } }
+    }
+  });
+
+  // Chart 5: Ponto de Equilíbrio vs Receita
+  makeChart("chartPE", {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        { label: "Receita", data: rows.map(r => r.receita), backgroundColor: COLORS.blue + "88", borderRadius: 4 },
+        {
+          label: "Ponto Equilíbrio", type: "line",
+          data: rows.map(r => Math.min(r.ponto_equilibrio, 400000)),
+          borderColor: COLORS.orange, borderWidth: 2, borderDash: [5, 4],
+          pointRadius: 4, pointBackgroundColor: COLORS.orange, fill: false
+        }
+      ]
+    },
+    options: {
+      ...chartDefaults, responsive: true, maintainAspectRatio: false,
+      plugins: {
+        ...chartDefaults.plugins,
+        legend: { display: true, labels: { color: "#94a3b8", font: { size: 10 }, boxWidth: 10, padding: 8 } },
+        tooltip: { ...chartDefaults.plugins.tooltip, callbacks: { label: ctx => ctx.dataset.label + ": " + fmtFull(ctx.raw) } }
+      },
+      scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks, callback: v => fmt(v) } } }
+    }
+  });
+
+  // Chart 6: Ticket Médio
+  makeChart("chartTicket", {
+    type: "line",
+    data: {
+      labels: MESES,
+      datasets: [{
+        label: "Ticket Médio", data: MESES.map(m => DATA[m].ticket_medio),
+        borderColor: COLORS.blue, backgroundColor: COLORS.blue + "22",
+        borderWidth: 2.5, fill: true, tension: 0.4,
+        pointRadius: 5, pointBackgroundColor: COLORS.blue,
+      }]
+    },
+    options: {
+      ...chartDefaults, responsive: true, maintainAspectRatio: false,
+      plugins: { ...chartDefaults.plugins, tooltip: { ...chartDefaults.plugins.tooltip, callbacks: { label: ctx => "Ticket: " + fmtFull(ctx.raw) } } },
+      scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks, callback: v => fmt(v) } } }
+    }
+  });
+
+  // Chart 7: Nº Clientes
+  makeChart("chartClientes", {
+    type: "bar",
+    data: {
+      labels: MESES,
+      datasets: [{
+        label: "Clientes Ativos", data: MESES.map(m => DATA[m].clientes),
+        backgroundColor: COLORS.teal + "cc", borderRadius: 4,
+      }]
+    },
+    options: {
+      ...chartDefaults, responsive: true, maintainAspectRatio: false,
+      plugins: { ...chartDefaults.plugins, tooltip: { ...chartDefaults.plugins.tooltip, callbacks: { label: ctx => ctx.raw + " clientes" } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: COLORS.text, font: { size: 10 } } },
+        y: { grid: { color: COLORS.grid }, ticks: { color: COLORS.text, font: { size: 10 }, stepSize: 2 } }
+      }
+    }
+  });
+}
+
+// ==================== KPI CARDS ====================
+function buildKPIs(month) {
+  const isAll = month === "all";
+  let receita, desp, lucro, cf, cv, clientes, ticket, mc, pe, saldo, margem;
+
+  if (isAll) {
+    receita = MESES.reduce((a, m) => a + DATA[m].receita, 0);
+    desp = MESES.reduce((a, m) => a + DATA[m].total_despesas, 0);
+    lucro = MESES.reduce((a, m) => a + DATA[m].lucro_liquido, 0);
+    cf = MESES.reduce((a, m) => a + DATA[m].custos_fixos, 0);
+    cv = MESES.reduce((a, m) => a + DATA[m].custos_variaveis, 0);
+    saldo = DATA["Mai/26"].saldo_caixa;
+    margem = (lucro / receita) * 100;
+    // Avg clients
+    clientes = Math.round(MESES.reduce((a, m) => a + DATA[m].clientes, 0) / MESES.length);
+    ticket = receita / MESES.reduce((a, m) => a + DATA[m].clientes, 0);
+    mc = ((receita - cv) / receita) * 100;
+    pe = cf / (mc / 100);
+  } else {
+    const d = DATA[month];
+    receita = d.receita; desp = d.total_despesas; lucro = d.lucro_liquido;
+    cf = d.custos_fixos; cv = d.custos_variaveis;
+    saldo = d.saldo_caixa; margem = d.margem_liquida_pct;
+    clientes = d.clientes; ticket = d.ticket_medio;
+    mc = d.mc_pct; pe = d.ponto_equilibrio;
+  }
+
+  const cards = [
+    {
+      label: "Faturamento Total", value: fmtFull(receita), color: "blue",
+      sub: isAll ? "Jan a Mai/26" : month,
+      badge: isAll ? null : (receita > 100000 ? { label: "Acima de 100k", cls: "badge-up" } : { label: "Abaixo de 100k", cls: "badge-down" })
+    },
+    {
+      label: "Resultado Líquido", value: fmtFull(lucro), color: lucro >= 0 ? "green" : "red",
+      sub: `Margem: ${pct(margem)}`,
+      badge: lucro >= 0 ? { label: "Lucro", cls: "badge-up" } : { label: "Prejuízo", cls: "badge-down" }
+    },
+    {
+      label: "Ticket Médio / Cliente", value: fmtFull(ticket), color: "purple",
+      sub: isAll ? "Média do período" : `${clientes} cliente${clientes > 1 ? "s" : ""} no mês`,
+      badge: null
+    },
+    {
+      label: "Clientes Ativos", value: isAll ? MESES.map(m => DATA[m].clientes).join(" → ") : clientes.toString(), color: "teal",
+      sub: isAll ? "Evolução Jan→Mai" : "Clientes com receita",
+      badge: null
+    },
+    {
+      label: "Custos Fixos", value: fmtFull(cf), color: "orange",
+      sub: `${((cf / (cf + cv)) * 100).toFixed(0)}% do total de custos`,
+      badge: null
+    },
+    {
+      label: "Custos Variáveis", value: fmtFull(cv), color: "purple",
+      sub: `${((cv / (cf + cv)) * 100).toFixed(0)}% do total de custos`,
+      badge: null
+    },
+    {
+      label: "Margem de Contribuição", value: pct(mc), color: mc > 50 ? "green" : "orange",
+      sub: "Quanto sobra para cobrir fixos",
+      badge: null
+    },
+    {
+      label: "Ponto de Equilíbrio", value: fmt(Math.min(pe, 9999999)), color: "orange",
+      sub: "Faturamento mínimo para não ter prejuízo",
+      badge: null
+    },
+  ];
+
+  const grid = document.getElementById("kpiGrid");
+  grid.innerHTML = cards.map(c => `
+    <div class="kpi-card ${c.color}">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value ${c.badge?.cls === 'badge-down' ? 'negative' : ''}">${c.value}</div>
+      <div class="kpi-sub">${c.sub}</div>
+      ${c.badge ? `<span class="kpi-badge ${c.badge.cls}">${c.badge.label}</span>` : ""}
+    </div>
+  `).join("");
+}
+
+// ==================== DRE TABLE ====================
+function buildDRE(month) {
+  const isAll = month === "all";
+  const cols = isAll ? MESES : [month];
+
+  const totalRow = (label, fn, cls = "") => {
+    return `<tr class="total-row"><td>${label}</td>${cols.map(m => {
+      const v = fn(DATA[m]);
+      const cl = v >= 0 ? "positive-val" : "negative-val";
+      return `<td class="${cl}">${fmtFull(v)}</td>`;
+    }).join("")}</tr>`;
+  };
+  const dataRow = (label, fn, indent = false) => {
+    return `<tr class="${indent ? "indent" : ""}"><td>${label}</td>${cols.map(m => {
+      const v = fn(DATA[m]);
+      if (v === 0) return `<td style="color:#334155">—</td>`;
+      const cl = v >= 0 ? "" : "negative-val";
+      return `<td class="${cl}">${fmtFull(v)}</td>`;
+    }).join("")}</tr>`;
+  };
+
+  const html = `
+    <thead>
+      <tr>
+        <th style="min-width:200px">Conta</th>
+        ${cols.map(m => `<th style="min-width:120px">${m}</th>`).join("")}
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="section-header"><td colspan="${cols.length + 1}">RECEITA BRUTA</td></tr>
+      ${dataRow("(+) Receitas de Serviços", d => d.receita, true)}
+      ${totalRow("= Receita Total", d => d.receita)}
+
+      <tr class="section-header"><td colspan="${cols.length + 1}">CUSTOS OPERACIONAIS</td></tr>
+      ${dataRow("(-) Custos Fixos (pessoal, impostos, etc.)", d => -d.custos_fixos, true)}
+      ${dataRow("(-) Custos Variáveis (bônus, cartões, etc.)", d => -d.custos_variaveis, true)}
+      ${totalRow("= Total Despesas", d => -d.total_despesas)}
+
+      <tr class="section-header"><td colspan="${cols.length + 1}">RESULTADO</td></tr>
+      ${totalRow("= Resultado Líquido do Período", d => d.lucro_liquido)}
+      ${dataRow("Margem Líquida %", d => parseFloat(d.margem_liquida_pct.toFixed(1)))}
+    </tbody>
+  `;
+
+  document.getElementById("dreTable").innerHTML = html;
+}
+
+// ==================== CLIENT TABLE ====================
+function buildClientTable() {
+  const max = CLIENTS[0].total;
+  const rows = CLIENTS.map(c => `
+    <tr>
+      <td style="font-size:12px">${c.name}</td>
+      <td>
+        <div style="font-weight:600;color:#e2e8f0">${fmtFull(c.total)}</div>
+        <div class="bar-bg"><div class="bar-fill" style="width:${(c.total/max*100).toFixed(0)}%"></div></div>
+      </td>
+      <td style="color:#64748b;font-size:12px">${c.n}x</td>
+    </tr>
+  `).join("");
+
+  document.getElementById("clientTable").innerHTML = `
+    <thead><tr><th>Cliente</th><th>Receita Total</th><th style="text-align:right">Transações</th></tr></thead>
+    <tbody>${rows}</tbody>
+  `;
+}
+
+// ==================== MONTH SELECTOR ====================
+function setMonth(m) {
+  currentMonth = m;
+  document.querySelectorAll(".month-btn").forEach(b => b.classList.remove("active"));
+  event.target.classList.add("active");
+  buildKPIs(m);
+  buildCharts(m);
+  buildDRE(m);
+}
+
+// ==================== INIT ====================
+window.addEventListener("DOMContentLoaded", () => {
+  buildKPIs("all");
+  buildCharts("all");
+  buildDRE("all");
+  buildClientTable();
+});
+</script>
+</body>
+</html>
